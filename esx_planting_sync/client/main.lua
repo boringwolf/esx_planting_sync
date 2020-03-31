@@ -73,8 +73,9 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
                 y = y,
                 z = z - currentItem.first_step
             })
-			
-            TriggerEvent('esx_planting_sync:startAction', name)
+	 
+            currentStep = 1
+            TriggerEvent('esx_planting_sync:StartGrowing', currentStep)
             break
         end
     end
@@ -83,41 +84,16 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
     end
 end)
 
-RegisterNetEvent("esx_receptury:StartAction")
-AddEventHandler("esx_receptury:StartAction", function(currentStep, currentAction)
-        local playerPed = GetPlayerPed(-1)
-        local threadTime = currentActionTime
-        if currentActionTime == 0 then
-            FreezeEntityPosition(playerPed, false)
-            do return end
-        end
-        if isActionStarted and threadTime == currentActionTime then
-            --Check that player select current option
-            if data.current.value == currentAction.correct then
-                        --Check that player select last option, or he still doing action
-                if currentStep < currentItem.steps then
-                    spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
-                    currentStep = currentStep + 1
-                    TriggerEvent('esx_receptury:storeStep', currentStep)
-                    else
-                    --Give item to player, when he just make last action
-                    spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
-                    TriggerServerEvent('esx_receptury:statusSuccess', currentItem.success_msg, data.current.min, data.current.max, currentItem.success_item)
-                    FreezeEntityPosition(playerPed, false)
-                    currentStep = 0
-                            TriggerEvent('esx_receptury:storeStep', currentStep)
-                        end
-                    else
-                        --Show failed object, when player select wrong option
-                        currentStep = 0
-                        local playerPed = GetPlayerPed(-1)
-                        FreezeEntityPosition(playerPed, false)
-                        exports.pNotify:SendNotification({text = currentItem.fail_msg, type = "error", layout = "centerLeft", timeout = 2500})
-                        spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
-                        TriggerEvent('esx_receptury:storeStep', currentStep)
-                    end
-                end
+RegisterNetEvent("esx_planting_sync:StartGrowing")
+AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep)
+            while currentStep < currentItem.steps do
+                        exports['progressBars']:startUI(300000, currentItem.progess_msg)
+                        Citizen.Wait(300000)
+                        spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
+                        currentStep = currentStep + 1
             end
+                        spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
+                        currentStep = 0
 end)
 
 
@@ -146,8 +122,8 @@ function spawnEndObject(object_start, object_end, x, y, z)
             z = z
         }, function(obj)
             deleteLastObject(object_start, x, y, z)
-            SetEntityHeading(obj, GetEntityHeading(GetPlayerPed(-1)))
             PlaceObjectOnGroundProperly(obj)
+            FreezeEntityPosition(obj, true)
         end)
     end
 end
@@ -171,9 +147,7 @@ function spawnNextObject(object_start, grow, x, y, z)
             x = x,
             y = y,
             z = z - grow
-        }, function(obj)
-            SetEntityHeading(obj, GetEntityHeading(GetPlayerPed(-1)))
-        end)
+        })
     end
 end
 

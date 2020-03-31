@@ -11,10 +11,11 @@ options =
         fail_msg = '不幸的是，植物已經枯萎了!',
         success_msg = '恭喜，收成前的等待是值得的!',
         start_msg = '開始種植.',
+        progess_msg = '大麻種植中',
         success_item = 'weed',
         cops = 0,
         first_step = 2.35,
-        steps = 7,
+        steps = 6,
         cords = {
           {x = -427.05, y = 1575.25, z = 357, distance = 20.25},
           {x = 2213.05, y = 5576.25, z = 53, distance = 10.25},
@@ -35,7 +36,7 @@ options =
           {lib = 'amb@world_human_gardener_plant@male@exit', anim ='exit', timeout = '2500'},
         },
         grow = {
-          2.24, 1.95, 1.65, 1.45, 1.20, 1.00
+          1.95, 1.65, 1.45, 1.20, 1.00
         }
       },
 }
