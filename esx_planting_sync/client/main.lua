@@ -19,6 +19,8 @@ local isInLocation = false
 local currentStep = 0
 local currentAction = nil
 local x, y, z = nil
+local weedPlants = {}
+local spawnedWeeds = 0
 
 
 Citizen.CreateThread(function()
@@ -35,45 +37,43 @@ Citizen.CreateThread(function()
 		local playerPed = PlayerPedId()
 		local coords = GetEntityCoords(playerPed)
 		local nearbyObject, nearbyID
+    	for i=1, #weedPlants, 1 do
+    		if GetDistanceBetweenCoords(coords, GetEntityCoords(weedPlants[i]), false) < 1 then
+    			nearbyObject, nearbyID = weedPlants[i], i
+    		end
+    	end
 
-		for i=1, #weedPlants, 1 do
-			if GetDistanceBetweenCoords(coords, GetEntityCoords(weedPlants[i]), false) < 1 then
-				nearbyObject, nearbyID = weedPlants[i], i
-			end
-		end
+    	if nearbyObject and IsPedOnFoot(playerPed) then
+    		if not isPickingUp then
+    			ESX.ShowHelpNotification(_U('weed_pickupprompt'))
+    		end
 
-		if nearbyObject and IsPedOnFoot(playerPed) then
-			if not isPickingUp then
-				ESX.ShowHelpNotification(_U('weed_pickupprompt'))
-			end
+    		if IsControlJustReleased(0, 38) and not isPickingUp then
+    			isPickingUp = true
 
-			if IsControlJustReleased(0, 38) and not isPickingUp then
-				isPickingUp = true
+    			ESX.TriggerServerCallback('esx_planting_sync:canPickUp', function(canPickUp)
+    				if canPickUp then
+    					TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
 
-				ESX.TriggerServerCallback('esx_drugs:canPickUp', function(canPickUp)
-					if canPickUp then
-						TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
+    					Citizen.Wait(2000)
+    					ClearPedTasks(playerPed)
+    					Citizen.Wait(1500)
+    		
+    					ESX.Game.DeleteObject(nearbyObject)
+    		
+    					TriggerServerEvent("esx_planting_sync:removeplants", nearbyID)
+    		
+    					TriggerServerEvent('esx_planting_sync:statusSuccess', currentItem.success_msg, 1, 1, currentItem.success_item)
+    				else
+    					ESX.ShowNotification(_U('weed_inventoryfull'))
+    				end
 
-						Citizen.Wait(2000)
-						ClearPedTasks(playerPed)
-						Citizen.Wait(1500)
-		
-						ESX.Game.DeleteObject(nearbyObject)
-		
-						table.remove(weedPlants, nearbyID)
-						spawnedWeeds = spawnedWeeds - 1
-		
-						TriggerServerEvent('esx_drugs:pickedUpCannabis')
-					else
-						ESX.ShowNotification(_U('weed_inventoryfull'))
-					end
-
-					isPickingUp = false
-				end, 'cannabis')
-			end
-		else
-			Citizen.Wait(500)
-		end
+    				isPickingUp = false
+    			end, currentItem.success_item)
+    		end
+    	else
+    		Citizen.Wait(500)
+        end
 	end
 end)
 
@@ -102,7 +102,9 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
 
             local coords    = GetEntityCoords(playerPed)
             local forward   = GetEntityForwardVector(playerPed)
-            x, y, z   = table.unpack(coords + forward * 1.0)
+            --print(coords  + forward * 1.0)
+            --print(forward)
+            x, y, z = table.unpack(coords)
 
             for k, StartAnims in pairs(currentItem.animations_end) do
                 if currentActionTime == 0 then
@@ -125,7 +127,6 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
 	 
             currentStep = 1
             TriggerEvent('esx_planting_sync:StartGrowing', currentStep)
-            break
         end
     end
     if not isInLocation then
@@ -135,21 +136,28 @@ end)
 
 RegisterNetEvent("esx_planting_sync:StartGrowing")
 AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep)
-            while currentStep < currentItem.steps do
-                exports['progressBars']:startUI(300000, currentItem.progess_msg)
-                Citizen.Wait(300000)
+            while currentStep == 0 do
+                exports['progressBars']:startUI(30000, currentItem.progess_msg)
+                Citizen.Wait(30000)
                 spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
                 currentStep = currentStep + 1
+                Citizen.Wait(2000)
             end
-                exports['progressBars']:startUI(300000, currentItem.progess_end_msg)
-                Citizen.Wait(300000)
+                Citizen.Wait(1000)
+                --exports['progressBars']:startUI(30000, currentItem.progess_end_msg)
+                --Citizen.Wait(30000)
                 spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
+                isActionStarted = false
                 currentStep = 0
 end)
 
-
-
-
+RegisterNetEvent("esx_planting_sync:updatePlants")
+AddEventHandler("esx_planting_sync:updatePlants", function(plants)
+    weedPlants = plants
+    for i=1, #weedPlants, 1 do
+        print(weedPlants[i])
+    end
+end)
 
 -- function
 
@@ -167,14 +175,15 @@ end
 
 function spawnEndObject(object_start, object_end, x, y, z)
     if isActionStarted then
+        deleteLastObject(object_start, x, y, z)
         ESX.Game.SpawnObject(object_end, {
             x = x,
             y = y,
             z = z
         }, function(obj)
-            deleteLastObject(object_start, x, y, z)
             PlaceObjectOnGroundProperly(obj)
             FreezeEntityPosition(obj, true)
+            TriggerServerEvent("esx_planting_sync:addplants", obj)
         end)
     end
 end

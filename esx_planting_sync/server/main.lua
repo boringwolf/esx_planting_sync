@@ -25,8 +25,24 @@ end
 
 RegisterServerEvent("esx_planting_sync:addplants")
 AddEventHandler("esx_planting_sync:addplants", function(obj)
-    table.insert()
+    table.insert(weedPlants, obj)
+    spawnedWeeds = spawnedWeeds + 1
+    for i=1, #weedPlants, 1 do
+        print(weedPlants[i])
+    end
+    TriggerClientEvent('esx_planting_sync:updatePlants', -1, weedPlants)
 end)
+
+RegisterServerEvent("esx_planting_sync:removeplants")
+AddEventHandler("esx_planting_sync:removeplants", function(nearbyID)
+    table.remove(weedPlants, nearbyID)
+    spawnedWeeds = spawnedWeeds - 1
+    for i=1, #weedPlants, 1 do
+        print(weedPlants[i])
+    end
+    TriggerClientEvent('esx_planting_sync:updatePlants', -1, weedPlants)
+end)
+
 
 RegisterServerEvent("esx_planting_sync:RemoveItem")
 AddEventHandler("esx_planting_sync:RemoveItem", function(item_name)
@@ -54,4 +70,20 @@ AddEventHandler("esx_planting_sync:statusSuccess", function(message, min, max, i
     else
         xPlayer.addInventoryItem(item, amount)
     end
+end)
+
+
+ESX.RegisterServerCallback('esx_planting_sync:canPickUp', function(source, cb, item)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    cb(xPlayer.canCarryItem(item, 1))
+end)
+
+ESX.RegisterServerCallback('esx_planting_sync:spawnedWeeds', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    cb(spawnedWeeds)
+end)
+
+ESX.RegisterServerCallback('esx_planting_sync:weedPlants', function(source, cb)
+    local xPlayer = ESX.GetPlayerFromId(source)
+    cb(weedPlants)
 end)
