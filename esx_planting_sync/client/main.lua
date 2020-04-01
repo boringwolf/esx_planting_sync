@@ -21,6 +21,8 @@ local currentAction = nil
 local x, y, z = nil
 local weedPlants = {}
 local spawnedWeeds = 0
+local plants = {}
+local currentowo = nil
 
 
 Citizen.CreateThread(function()
@@ -36,10 +38,11 @@ Citizen.CreateThread(function()
 
 		local playerPed = PlayerPedId()
 		local coords = GetEntityCoords(playerPed)
-		local nearbyObject, nearbyID
-    	for i=1, #weedPlants, 1 do
-    		if GetDistanceBetweenCoords(coords, GetEntityCoords(weedPlants[i]), false) < 1 then
-    			nearbyObject, nearbyID = weedPlants[i], i
+		local nearbyObject, nearbyID, current
+
+    	for k,v in pairs(plants) do
+    		if GetDistanceBetweenCoords(coords, GetEntityCoords(v.obj), false) < 1 then
+    			nearbyObject, nearbyID, current = v.obj, v.id, options[v.name]
     		end
     	end
 
@@ -63,13 +66,13 @@ Citizen.CreateThread(function()
     		
     					TriggerServerEvent("esx_planting_sync:removeplants", nearbyID)
     		
-    					TriggerServerEvent('esx_planting_sync:statusSuccess', currentItem.success_msg, 1, 1, currentItem.success_item)
+    					TriggerServerEvent('esx_planting_sync:statusSuccess', current.success_msg, 100, 300, current.success_item)
     				else
     					ESX.ShowNotification(_U('weed_inventoryfull'))
     				end
 
     				isPickingUp = false
-    			end, currentItem.success_item)
+    			end, current.success_item)
     		end
     	else
     		Citizen.Wait(500)
@@ -86,11 +89,11 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
 
     for k, Cords in pairs(currentItem.cords) do
         if IsPedInAnyVehicle(playerPed) then
-            exports.pNotify:SendNotification({text = _U('vehicle_deny'), type = "error", layout = "centerLeft", timeout = 2000})
+            exports.pNotify:SendNotification({text = "不要在車子裡面!!", type = "error", layout = "centerLeft", timeout = 2000})
             do return end
         end
         if isActionStarted then
-            exports.pNotify:SendNotification({text = _U('wait_end'), type = "error", layout = "centerLeft", timeout = 2000})
+            exports.pNotify:SendNotification({text = "請等待上一次結束", type = "error", layout = "centerLeft", timeout = 2000})
             do return end
         end
         if GetDistanceBetweenCoords (Cords.x, Cords.y, Cords.z, GetEntityCoords(playerPed)) <= Cords.distance then
@@ -102,8 +105,6 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
 
             local coords    = GetEntityCoords(playerPed)
             local forward   = GetEntityForwardVector(playerPed)
-            --print(coords  + forward * 1.0)
-            --print(forward)
             x, y, z = table.unpack(coords)
 
             for k, StartAnims in pairs(currentItem.animations_end) do
@@ -126,7 +127,7 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
             })
 	 
             currentStep = 1
-            TriggerEvent('esx_planting_sync:StartGrowing', currentStep)
+            TriggerEvent('esx_planting_sync:StartGrowing', currentStep, coords)
         end
     end
     if not isInLocation then
@@ -135,28 +136,54 @@ AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
 end)
 
 RegisterNetEvent("esx_planting_sync:StartGrowing")
-AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep)
-            while currentStep == 0 do
-                exports['progressBars']:startUI(30000, currentItem.progess_msg)
-                Citizen.Wait(30000)
+AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep, coords)
+            while currentStep < currentItem.steps do
+                --exports['progressBars']:startUI(2800, currentItem.progess_msg)
+                Citizen.Wait(3000)
                 spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
                 currentStep = currentStep + 1
                 Citizen.Wait(2000)
             end
                 Citizen.Wait(1000)
-                --exports['progressBars']:startUI(30000, currentItem.progess_end_msg)
-                --Citizen.Wait(30000)
-                spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
+                --exports['progressBars']:startUI(2800, currentItem.progess_msg)
+                Citizen.Wait(3000)
+                deleteLastObject(currentItem.object, x, y, z)
+                TriggerServerEvent("esx_planting_sync:addplants", coords, currentItem.name)
                 isActionStarted = false
                 currentStep = 0
 end)
 
-RegisterNetEvent("esx_planting_sync:updatePlants")
-AddEventHandler("esx_planting_sync:updatePlants", function(plants)
-    weedPlants = plants
-    for i=1, #weedPlants, 1 do
-        print(weedPlants[i])
+RegisterCommand("fuckyou", function(source, args, rawCommand)
+    -- If the source is > 0, then that means it must be a player.
+    PlaceObjectOnGroundProperly(args[1])
+end, false)
+
+RegisterNetEvent("esx_planting_sync:RemovePlants")
+AddEventHandler("esx_planting_sync:RemovePlants", function(id)
+    ESX.Game.DeleteObject(plants[id].obj)
+    plants[id] = nil
+end)
+
+RegisterNetEvent("esx_planting_sync:CreatePlants")
+AddEventHandler("esx_planting_sync:CreatePlants", function(plantId, plantcoord, item_name)
+    currentowo = options[item_name]
+    plantObject = false
+    ESX.Game.SpawnLocalObject(currentowo.end_object, plantcoord, function(obj)
+        plantObject = obj
+    end)
+    while not plantObject do
+        Citizen.Wait(10)
     end
+    PlaceObjectOnGroundProperly(plantObject)
+    FreezeEntityPosition(plantObject, true)
+
+    plants[plantId] = {
+        id = plantId,
+        obj = plantObject,
+        coords = plantcoord,
+        name = item_name
+    }
+
 end)
 
 -- function
@@ -176,15 +203,6 @@ end
 function spawnEndObject(object_start, object_end, x, y, z)
     if isActionStarted then
         deleteLastObject(object_start, x, y, z)
-        ESX.Game.SpawnObject(object_end, {
-            x = x,
-            y = y,
-            z = z
-        }, function(obj)
-            PlaceObjectOnGroundProperly(obj)
-            FreezeEntityPosition(obj, true)
-            TriggerServerEvent("esx_planting_sync:addplants", obj)
-        end)
     end
 end
 

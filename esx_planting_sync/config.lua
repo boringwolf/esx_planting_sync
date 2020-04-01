@@ -6,6 +6,7 @@ Config.cancel_buttons = {289, 170, 168, 56}
 options =
 {
   ['seed_weed'] = {
+        name = 'seed_weed',
         object = 'prop_weed_01',
         end_object = 'prop_weed_02',
         fail_msg = '不幸的是，植物已經枯萎了!',
