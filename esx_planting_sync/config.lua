@@ -12,6 +12,7 @@ options =
         success_msg = '恭喜，收成前的等待是值得的!',
         start_msg = '開始種植.',
         progess_msg = '大麻種植中',
+        progess_end_msg = '大麻最終階段',
         success_item = 'weed',
         cops = 0,
         first_step = 2.35,

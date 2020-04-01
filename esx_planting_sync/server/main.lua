@@ -1,5 +1,7 @@
 ESX = nil
 local lastTime = nil
+local spawnedWeeds = 0
+local weedPlants = {}
 
 TriggerEvent('esx:getSharedObject', function(obj) ESX = obj end)
 
@@ -21,6 +23,10 @@ for item_name in pairs(options) do
     end)
 end
 
+RegisterServerEvent("esx_planting_sync:addplants")
+AddEventHandler("esx_planting_sync:addplants", function(obj)
+    table.insert()
+end)
 
 RegisterServerEvent("esx_planting_sync:RemoveItem")
 AddEventHandler("esx_planting_sync:RemoveItem", function(item_name)

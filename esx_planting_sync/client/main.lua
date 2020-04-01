@@ -28,6 +28,55 @@ Citizen.CreateThread(function()
     end
 end)
 
+Citizen.CreateThread(function()
+	while true do
+		Citizen.Wait(0)
+
+		local playerPed = PlayerPedId()
+		local coords = GetEntityCoords(playerPed)
+		local nearbyObject, nearbyID
+
+		for i=1, #weedPlants, 1 do
+			if GetDistanceBetweenCoords(coords, GetEntityCoords(weedPlants[i]), false) < 1 then
+				nearbyObject, nearbyID = weedPlants[i], i
+			end
+		end
+
+		if nearbyObject and IsPedOnFoot(playerPed) then
+			if not isPickingUp then
+				ESX.ShowHelpNotification(_U('weed_pickupprompt'))
+			end
+
+			if IsControlJustReleased(0, 38) and not isPickingUp then
+				isPickingUp = true
+
+				ESX.TriggerServerCallback('esx_drugs:canPickUp', function(canPickUp)
+					if canPickUp then
+						TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
+
+						Citizen.Wait(2000)
+						ClearPedTasks(playerPed)
+						Citizen.Wait(1500)
+		
+						ESX.Game.DeleteObject(nearbyObject)
+		
+						table.remove(weedPlants, nearbyID)
+						spawnedWeeds = spawnedWeeds - 1
+		
+						TriggerServerEvent('esx_drugs:pickedUpCannabis')
+					else
+						ESX.ShowNotification(_U('weed_inventoryfull'))
+					end
+
+					isPickingUp = false
+				end, 'cannabis')
+			end
+		else
+			Citizen.Wait(500)
+		end
+	end
+end)
+
 RegisterNetEvent("esx_planting_sync:RequestStart")
 AddEventHandler("esx_planting_sync:RequestStart", function(item_name, time)
     currentItem = options[item_name]
@@ -87,13 +136,15 @@ end)
 RegisterNetEvent("esx_planting_sync:StartGrowing")
 AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep)
             while currentStep < currentItem.steps do
-                        exports['progressBars']:startUI(300000, currentItem.progess_msg)
-                        Citizen.Wait(300000)
-                        spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
-                        currentStep = currentStep + 1
+                exports['progressBars']:startUI(300000, currentItem.progess_msg)
+                Citizen.Wait(300000)
+                spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
+                currentStep = currentStep + 1
             end
-                        spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
-                        currentStep = 0
+                exports['progressBars']:startUI(300000, currentItem.progess_end_msg)
+                Citizen.Wait(300000)
+                spawnEndObject(currentItem.object, currentItem.end_object, x, y, z)
+                currentStep = 0
 end)
 
 
