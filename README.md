@@ -1,6 +1,9 @@
 # esx_planting_sync
 
-種植植物插件
+種下種子後有一定等待時間，可以被別人採收。
+
+Waiting for a while after plant seed. And it could be stole by other player.
+
 
 Installation
 -
@@ -12,6 +15,9 @@ es_extended is needed.
 if you have any question. Don't be afraid to join my
 [Discord.](https://discord.gg/dSG9CUC)
 
+Known Bugs
+-
+* When grub at same time, it would be duplicae harvest.
 
 參考
 -
