@@ -7,7 +7,7 @@ Waiting for a while after plant seed. And it could be stole by other player.
 
 Installation
 -
-es_extended is needed.
+es_extended needed.
 
 
 聯絡我
