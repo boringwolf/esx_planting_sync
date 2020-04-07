@@ -13,7 +13,7 @@ es_extended needed.
 聯絡我
 -
 if you have any question. Don't be afraid to join my
-[Discord.](https://discord.gg/dSG9CUC)
+[Discord.](https://discord.gg/pRRmdA4)
 
 Known Bugs
 -
