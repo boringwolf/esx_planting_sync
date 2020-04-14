@@ -1,3 +1,5 @@
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/boringwolf/esx_planting_sync) 
+
 # esx_planting_sync
 
 種下種子後有一定等待時間，可以被別人採收。
