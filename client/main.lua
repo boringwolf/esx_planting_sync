@@ -33,51 +33,51 @@ Citizen.CreateThread(function()
 end)
 
 Citizen.CreateThread(function()
-	while true do
-		Citizen.Wait(0)
+    while true do
+        Citizen.Wait(0)
+        local playerPed = PlayerPedId()
+        local playerCoords, letSleep = GetEntityCoords(playerPed), true
+        local closestPlayer, closestDistance = ESX.Game.GetClosestPlayer()
 
-		local playerPed = PlayerPedId()
-		local coords = GetEntityCoords(playerPed)
-		local nearbyObject, nearbyID, current
+        for k,v in pairs(plants) do
+            local distance = #(playerCoords - v.coords)
 
-    	for k,v in pairs(plants) do
-    		if GetDistanceBetweenCoords(coords, GetEntityCoords(v.obj), false) < 1 then
-    			nearbyObject, nearbyID, current = v.obj, v.id, options[v.name]
-    		end
-    	end
+            if distance < 5 then
+                local label = v.label
+                letSleep = false
 
-    	if nearbyObject and IsPedOnFoot(playerPed) then
-    		if not isPickingUp then
-    			ESX.ShowHelpNotification(_U('weed_pickupprompt'))
-    		end
+                if distance < 1 then
+                    if IsControlJustReleased(0, 38) then
+                        if IsPedOnFoot(playerPed) and (closestDistance == -1 or closestDistance > 3) and not v.inRange then
+                            v.inRange = true
 
-    		if IsControlJustReleased(0, 38) and not isPickingUp then
-    			isPickingUp = true
+                            TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
+                            Citizen.Wait(2000)
+                            ClearPedTasks(playerPed)
+                            Citizen.Wait(1500)
 
-    			ESX.TriggerServerCallback('esx_planting_sync:canPickUp', function(canPickUp)
-    				if canPickUp then
-    					TaskStartScenarioInPlace(playerPed, 'world_human_gardener_plant', 0, false)
+                            TriggerServerEvent('esx_planting_sync:onPickup', v.id)
+                            PlaySoundFrontend(-1, 'PICK_UP', 'HUD_FRONTEND_DEFAULT_SOUNDSET', false)
+                        end
+                    end
 
-    					Citizen.Wait(2000)
-    					ClearPedTasks(playerPed)
-    					Citizen.Wait(1500)
-    		
-    					ESX.Game.DeleteObject(nearbyObject)
-    		
-    					TriggerServerEvent("esx_planting_sync:removeplants", nearbyID)
-    		
-    					TriggerServerEvent('esx_planting_sync:statusSuccess', current.success_msg, 100, 300, current.success_item)
-    				else
-    					ESX.ShowNotification(_U('weed_inventoryfull'))
-    				end
+                    label = ('%s~n~%s'):format(label, _U('threw_pickup_prompt'))
+                end
 
-    				isPickingUp = false
-    			end, current.success_item)
-    		end
-    	else
-    		Citizen.Wait(500)
+                ESX.Game.Utils.DrawText3D({
+                    x = v.coords.x,
+                    y = v.coords.y,
+                    z = v.coords.z + 1
+                }, label, 1.2, 1)
+            elseif v.inRange then
+                v.inRange = false
+            end
         end
-	end
+
+        if letSleep then
+            Citizen.Wait(500)
+        end
+    end
 end)
 
 RegisterNetEvent("esx_planting_sync:RequestStart")
@@ -138,25 +138,17 @@ end)
 RegisterNetEvent("esx_planting_sync:StartGrowing")
 AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep, coords)
             while currentStep < currentItem.steps do
-                --exports['progressBars']:startUI(2800, currentItem.progess_msg)
                 Citizen.Wait(3000)
                 spawnNextObject(currentItem.object, currentItem.grow[currentStep], x, y, z)
                 currentStep = currentStep + 1
                 Citizen.Wait(2000)
             end
-                Citizen.Wait(1000)
-                --exports['progressBars']:startUI(2800, currentItem.progess_msg)
                 Citizen.Wait(3000)
                 deleteLastObject(currentItem.object, x, y, z)
                 TriggerServerEvent("esx_planting_sync:addplants", coords, currentItem.name)
                 isActionStarted = false
                 currentStep = 0
 end)
-
-RegisterCommand("fuckyou", function(source, args, rawCommand)
-    -- If the source is > 0, then that means it must be a player.
-    PlaceObjectOnGroundProperly(args[1])
-end, false)
 
 RegisterNetEvent("esx_planting_sync:RemovePlants")
 AddEventHandler("esx_planting_sync:RemovePlants", function(id)
@@ -165,10 +157,10 @@ AddEventHandler("esx_planting_sync:RemovePlants", function(id)
 end)
 
 RegisterNetEvent("esx_planting_sync:CreatePlants")
-AddEventHandler("esx_planting_sync:CreatePlants", function(plantId, plantcoord, item_name)
-    currentowo = options[item_name]
+AddEventHandler("esx_planting_sync:CreatePlants", function(plantId, plantcoord, item_name, label)
+    ccitem_name = options[item_name]
     plantObject = false
-    ESX.Game.SpawnLocalObject(currentowo.end_object, plantcoord, function(obj)
+    ESX.Game.SpawnLocalObject(ccitem_name.end_object, plantcoord, function(obj)
         plantObject = obj
     end)
     while not plantObject do
@@ -181,9 +173,35 @@ AddEventHandler("esx_planting_sync:CreatePlants", function(plantId, plantcoord, 
         id = plantId,
         obj = plantObject,
         coords = plantcoord,
-        name = item_name
+        name = item_name,
+        label = label
     }
 
+end)
+
+RegisterNetEvent('esx_planting_sync:createMissingPlants')
+AddEventHandler('esx_planting_sync:createMissingPlants', function(missingPlants)
+    for plantid,Plants in pairs(missingPlants) do
+        local plantObject = nil
+
+        citem_name = options[Plants.item_name]
+        ESX.Game.SpawnLocalObject(citem_name.end_object, Plants.coords, function(obj)
+            plantObject = obj
+        end)
+        while not plantObject do
+            Citizen.Wait(10)
+        end
+        PlaceObjectOnGroundProperly(plantObject)
+        FreezeEntityPosition(plantObject, true)
+
+        plants[plantId] = {
+            id = plantId,
+            obj = plantObject,
+            coords = vector3(Plants.coords.x, Plants.coords.y, Plants.coords.z),
+            name = Plants.item_name,
+            label = Plants.label
+        }
+    end
 end)
 
 -- function

@@ -7,14 +7,21 @@ options =
 {
   ['seed_weed'] = {
         name = 'seed_weed',
+        label = {
+          '大麻',
+          '大麻幼苗'
+        },
         object = 'prop_weed_01',
-        end_object = 'prop_weed_02',
+        end_object = 'prop_weed_01',
         fail_msg = '不幸的是，植物已經枯萎了!',
         success_msg = '恭喜，收成前的等待是值得的!',
         start_msg = '開始種植.',
         progess_msg = '大麻種植中',
         progess_end_msg = '大麻最終階段',
         success_item = 'weed',
+        range = {
+          100, 300
+        },
         cops = 0,
         first_step = 2.35,
         steps = 6,
