@@ -17,7 +17,7 @@ if you have any question. Don't be afraid to join my
 
 Known Bugs
 -
-* When grub at same time, it would be duplicae harvest.
+* ~~When grub at same time, it would be duplicae harvest.~~
 
 參考
 -
