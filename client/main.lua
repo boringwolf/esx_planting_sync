@@ -144,7 +144,7 @@ AddEventHandler("esx_planting_sync:StartGrowing", function(currentStep, coords)
                 Citizen.Wait(2000)
             end
                 Citizen.Wait(3000)
-                deleteLastObject(currentItem.object, x, y, z)
+                --deleteLastObject(currentItem.object, x, y, z)
                 TriggerServerEvent("esx_planting_sync:addplants", coords, currentItem.name)
                 isActionStarted = false
                 currentStep = 0
