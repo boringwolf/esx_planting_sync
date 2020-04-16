@@ -13,7 +13,7 @@ es_extended needed.
 聯絡我
 -
 if you have any question. Don't be afraid to join my
-[Discord.](https://discord.gg/pRRmdA4)
+[Discord.](https://discord.gg/dSG9CUC)
 
 Known Bugs
 -
@@ -24,3 +24,4 @@ Known Bugs
 * [esx_drugs](https://github.com/ESX-Org/esx_drugs)
 * [progressBars](https://github.com/torpidity/progressBars)
 * [esx_planting](https://github.com/MacieGx/esx_planting)
+* [esx_extended](https://github.com/ESX-Org/es_extended)
